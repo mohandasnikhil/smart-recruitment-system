@@ -24,11 +24,12 @@ for i in range(6):
     st.markdown(f"**Question {i+1}**")
     q_text = st.text_input(f"Question {i+1} Text", key=f"q{i}_text")
     q_type = st.selectbox("Question Type", [
-        "Skills/Experience Match",
-        "Salary Expectation",
-        "Notice Period",
-        "Optional (Text)"
-    ], key=f"q{i}_type")
+    "Role Suitability",           
+    "Skills/Experience Match",
+    "Salary Expectation",
+    "Notice Period",
+    "Optional (Text)"
+], key=f"q{i}_type")
     response_type = st.selectbox("Expected Response Type", ["Text", "Yes/No", "Number"], key=f"q{i}_resp")
     disqualify_if_no = False
     if response_type == "Yes/No":

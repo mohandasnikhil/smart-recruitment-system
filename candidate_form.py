@@ -19,7 +19,7 @@ os.makedirs(RESPONSES_DIR, exist_ok=True)
 os.makedirs(RESUMES_DIR, exist_ok=True)
 
 # --- Step 1: Get job_id from query params if present ---
-query_params = st.experimental_get_query_params()
+query_params = st.query_params
 preselected_job_id = query_params.get("job_id", [None])[0]
 
 # --- Step 2: Load job config ---
