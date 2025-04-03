@@ -18,13 +18,23 @@ RESUMES_DIR = "resumes"
 os.makedirs(RESPONSES_DIR, exist_ok=True)
 os.makedirs(RESUMES_DIR, exist_ok=True)
 
-# --- Step 1: Select Job ID ---
-job_files = [f for f in os.listdir(CONFIG_DIR) if f.endswith(".json")]
-if not job_files:
-    st.error("No job configurations found. Please check with the recruiter.")
-    st.stop()
+# --- Step 1: Get job_id from query params if present ---
+query_params = st.experimental_get_query_params()
+preselected_job_id = query_params.get("job_id", [None])[0]
 
-job_file = st.selectbox("Select the Job you are applying for:", job_files)
+# --- Step 2: Load job config ---
+job_files = [f for f in os.listdir(CONFIG_DIR) if f.endswith(".json")]
+
+if preselected_job_id:
+    job_file = f"{preselected_job_id}.json"
+    if job_file not in job_files:
+        st.error("❌ Invalid job link or job not found.")
+        st.stop()
+else:
+    if not job_files:
+        st.error("No job configurations found. Please check with the recruiter.")
+        st.stop()
+    job_file = st.selectbox("Select the Job you are applying for:", job_files)
 
 with open(os.path.join(CONFIG_DIR, job_file), "r") as f:
     job_config = json.load(f)
@@ -32,21 +42,21 @@ with open(os.path.join(CONFIG_DIR, job_file), "r") as f:
 st.subheader("📝 Job Description")
 st.markdown(job_config["job_description"])
 
-# --- Step 2: Collect Candidate Info ---
+# --- Step 3: Collect Candidate Info ---
 st.subheader("👤 Your Information")
 name = st.text_input("Your Full Name")
 email = st.text_input("Your Email Address")
 phone = st.text_input("Phone Number (include country code, e.g. +971501234567)")
 linkedin = st.text_input("LinkedIn Profile URL (optional)")
 
-# Basic validation for email and phone
+# --- Validation ---
 def is_valid_email(e):
     return "@" in e and "." in e
 
 def is_valid_phone(p):
     return bool(re.match(r"^\+?\d{7,15}$", p))
 
-# --- Step 3: Show Questions and Resume Upload if info is valid ---
+# --- Step 4: Show Questions and Resume Upload ---
 if name and is_valid_email(email) and is_valid_phone(phone):
     st.subheader("🧠 Answer the Screening Questions")
     answers = []
@@ -54,7 +64,7 @@ if name and is_valid_email(email) and is_valid_phone(phone):
 
     for i, q in enumerate(job_config["questions"]):
         q_text = q["question"]
-        q_type = q["type"]
+        q_type = q.get("type", "Optional (Text)")
         response_type = q.get("response_type", "Text")
         disqualify_if_no = q.get("disqualify_if_no", False)
 
@@ -62,22 +72,20 @@ if name and is_valid_email(email) and is_valid_phone(phone):
             answer = st.radio(q_text, ["Yes", "No"], key=f"q_{i}")
             if disqualify_if_no and answer == "No":
                 disqualified = True
-        elif q_type == "Salary Expectation":
-            answer = st.number_input(f"{q_text} (AED)", min_value=0, max_value=100000, step=500)
-        elif q_type == "Notice Period":
-            answer = st.number_input(f"{q_text} (in days)", min_value=0, max_value=365, step=1)
+        elif response_type == "Number":
+            answer = st.number_input(q_text, min_value=0, step=1, key=f"q_{i}")
         else:
             answer = st.text_input(q_text, key=f"q_{i}")
+
         answers.append(answer)
 
     st.subheader("📤 Upload Your Resume")
     uploaded_file = st.file_uploader("Upload your resume (PDF or DOCX)", type=["pdf", "docx"])
 
-    # --- Step 4: Submit ---
+    # --- Step 5: Submit ---
     st.subheader("✅ Submit Application")
-
     if st.button("Submit Application"):
-        if not uploaded_file or not all(answers):
+        if not uploaded_file or not all(str(a).strip() for a in answers):
             st.warning("Please fill out all fields and upload your resume.")
         elif disqualified:
             st.error("❌ Based on your answers, you do not meet one or more mandatory requirements for this role.")

@@ -10,11 +10,7 @@ st.title("🧑‍💼 Create a Job Posting")
 
 # File system setup
 DATA_DIR = "job_configs"
-RESPONSES_DIR = "job_responses"
-RESUMES_DIR = "resumes"
-
-for folder in [DATA_DIR, RESPONSES_DIR, RESUMES_DIR]:
-    os.makedirs(folder, exist_ok=True)
+os.makedirs(DATA_DIR, exist_ok=True)
 
 # Step 1: Upload Job Description
 st.subheader("1. Upload Job Description")
@@ -23,26 +19,23 @@ jd_text = st.text_area("Paste the job description here", height=200)
 # Step 2: Define Screening Questions
 st.subheader("2. Define Up to 6 Screening Questions")
 questions = []
+
 for i in range(6):
     st.markdown(f"**Question {i+1}**")
     q_text = st.text_input(f"Question {i+1} Text", key=f"q{i}_text")
     q_type = st.selectbox("Question Type", [
-        "Mandatory (Yes/No)",
         "Skills/Experience Match",
         "Salary Expectation",
         "Notice Period",
         "Optional (Text)"
     ], key=f"q{i}_type")
-
-    response_type = st.selectbox("Response Format", ["Text", "Yes/No", "Number"], key=f"q{i}_response_type")
+    response_type = st.selectbox("Expected Response Type", ["Text", "Yes/No", "Number"], key=f"q{i}_resp")
     disqualify_if_no = False
-    expected_salary_range = ""
-
     if response_type == "Yes/No":
-        disqualify_if_no = st.checkbox("Disqualify candidate if answer is 'No'?", key=f"q{i}_disqualify")
-
+        disqualify_if_no = st.checkbox("Disqualify if answered 'No'?", key=f"q{i}_disq")
+    salary_range = ""
     if q_type == "Salary Expectation":
-        expected_salary_range = st.text_input("Expected Salary Range (e.g. 8000-12000)", key=f"q{i}_range")
+        salary_range = st.text_input("Expected Salary Range (e.g. 8000-12000)", key=f"q{i}_range")
 
     if q_text:
         questions.append({
@@ -50,10 +43,10 @@ for i in range(6):
             "type": q_type,
             "response_type": response_type,
             "disqualify_if_no": disqualify_if_no,
-            "salary_range": expected_salary_range
+            "salary_range": salary_range
         })
 
-# Save Job Posting
+# Step 3: Save Job Posting
 st.subheader("3. Save Job Posting")
 if st.button("✅ Save Job"):
     if not jd_text or not questions:
@@ -69,4 +62,8 @@ if st.button("✅ Save Job"):
         with open(f"{DATA_DIR}/{job_id}.json", "w") as f:
             json.dump(config, f, indent=2)
         st.success(f"✅ Job saved successfully with ID: {job_id}")
-        st.code(f"Job ID: {job_id}", language="text")
+
+        # 🎯 Candidate form link
+        candidate_form_url = f"https://your-candidate-app.streamlit.app/?job_id={job_id}"
+        st.markdown(f"**🔗 Candidate Application Link:** [Click to Copy]({candidate_form_url})")
+        st.code(candidate_form_url, language="text")
