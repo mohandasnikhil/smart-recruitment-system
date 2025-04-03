@@ -50,19 +50,24 @@ def is_valid_phone(p):
 if name and is_valid_email(email) and is_valid_phone(phone):
     st.subheader("🧠 Answer the Screening Questions")
     answers = []
+    disqualified = False
 
-    for q in job_config["questions"]:
+    for i, q in enumerate(job_config["questions"]):
         q_text = q["question"]
         q_type = q["type"]
-        if q_type == "Salary Expectation":
-            min_val, max_val = 0, 100000
-            answer = st.number_input(f"{q_text} (AED)", min_value=min_val, max_value=max_val, step=500)
+        response_type = q.get("response_type", "Text")
+        disqualify_if_no = q.get("disqualify_if_no", False)
+
+        if response_type == "Yes/No":
+            answer = st.radio(q_text, ["Yes", "No"], key=f"q_{i}")
+            if disqualify_if_no and answer == "No":
+                disqualified = True
+        elif q_type == "Salary Expectation":
+            answer = st.number_input(f"{q_text} (AED)", min_value=0, max_value=100000, step=500)
         elif q_type == "Notice Period":
             answer = st.number_input(f"{q_text} (in days)", min_value=0, max_value=365, step=1)
-        elif q_type == "Mandatory (Yes/No)":
-            answer = st.radio(q_text, ["Yes", "No"])
         else:
-            answer = st.text_input(q_text)
+            answer = st.text_input(q_text, key=f"q_{i}")
         answers.append(answer)
 
     st.subheader("📤 Upload Your Resume")
@@ -74,6 +79,8 @@ if name and is_valid_email(email) and is_valid_phone(phone):
     if st.button("Submit Application"):
         if not uploaded_file or not all(answers):
             st.warning("Please fill out all fields and upload your resume.")
+        elif disqualified:
+            st.error("❌ Based on your answers, you do not meet one or more mandatory requirements for this role.")
         else:
             job_id = job_config["job_id"]
             timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")

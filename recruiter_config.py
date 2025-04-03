@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 import os
 import uuid
 import json
@@ -32,20 +31,29 @@ for i in range(6):
         "Skills/Experience Match",
         "Salary Expectation",
         "Notice Period",
-        "Optional (Text)",
-        "---"
+        "Optional (Text)"
     ], key=f"q{i}_type")
+
+    response_type = st.selectbox("Response Format", ["Text", "Yes/No", "Number"], key=f"q{i}_response_type")
+    disqualify_if_no = False
     expected_salary_range = ""
+
+    if response_type == "Yes/No":
+        disqualify_if_no = st.checkbox("Disqualify candidate if answer is 'No'?", key=f"q{i}_disqualify")
+
     if q_type == "Salary Expectation":
         expected_salary_range = st.text_input("Expected Salary Range (e.g. 8000-12000)", key=f"q{i}_range")
+
     if q_text:
         questions.append({
             "question": q_text,
             "type": q_type,
+            "response_type": response_type,
+            "disqualify_if_no": disqualify_if_no,
             "salary_range": expected_salary_range
         })
 
-# Step 3: Save Job Posting
+# Save Job Posting
 st.subheader("3. Save Job Posting")
 if st.button("✅ Save Job"):
     if not jd_text or not questions:
@@ -62,4 +70,3 @@ if st.button("✅ Save Job"):
             json.dump(config, f, indent=2)
         st.success(f"✅ Job saved successfully with ID: {job_id}")
         st.code(f"Job ID: {job_id}", language="text")
-
